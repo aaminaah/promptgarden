@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Prompt Garden · Aamina Hussain</title>
+<link href="https://fonts.googleapis.com/css2?family=Sacramento&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --navy:#080d2e; --gold:#f5c518; --cream:#fdf3e3; --terra:#8b3a2e; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--navy); color:var(--cream); font-family:'DM Sans',sans-serif; height:100vh; overflow:hidden; cursor:none; }
+  #cursor { position:fixed; width:12px; height:12px; background:var(--gold); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); transition:width .3s,height .3s,background .3s; mix-blend-mode:screen; }
+  #cursor.big { width:28px; height:28px; background:rgba(245,197,24,.2); border:1px solid var(--gold); }
+  body::after { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E"); opacity:.04; pointer-events:none; z-index:200; }
+  #c { position:fixed; inset:0; z-index:0; }
+
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10; transition:opacity .9s ease; }
+  .screen.off { opacity:0; pointer-events:none; }
+
+  /* INTRO */
+  #s-intro { gap:26px; }
+  .big-q { font-family:'Sacramento',cursive; font-size:clamp(40px,7vw,72px); color:var(--gold); text-shadow:0 0 50px rgba(245,197,24,.18); opacity:0; animation:up 1.2s ease .7s forwards; }
+  .input-wrap { width:min(460px,85vw); opacity:0; animation:up 1s ease 1.7s forwards; }
+  #word-input { width:100%; background:transparent; border:none; border-bottom:1px solid rgba(245,197,24,.35); color:var(--cream); font-family:'Cormorant Garamond',serif; font-size:22px; font-style:italic; padding:12px 4px; outline:none; text-align:center; caret-color:var(--gold); transition:border-color .3s; }
+  #word-input:focus { border-bottom-color:var(--gold); }
+  #word-input::placeholder { color:rgba(253,243,227,.28); }
+  .hint { text-align:center; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:rgba(253,243,227,.28); margin-top:9px; }
+  #counter { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:rgba(245,197,24,.45); opacity:0; animation:up 1s ease 2.3s forwards; }
+
+  #status { position:fixed; bottom:32px; left:50%; transform:translateX(-50%); font-family:'Cormorant Garamond',serif; font-style:italic; font-size:15px; color:rgba(253,243,227,.5); opacity:0; transition:opacity .5s; z-index:20; white-space:nowrap; }
+  #poem { position:fixed; bottom:120px; left:50%; transform:translateX(-50%); font-family:'Cormorant Garamond',serif; font-style:italic; font-size:clamp(14px,2.2vw,19px); color:rgba(253,243,227,.62); text-align:center; max-width:480px; opacity:0; transition:opacity 1.2s ease; z-index:20; line-height:1.7; pointer-events:none; }
+
+  /* PE PANEL */
+  #pe { position:fixed; bottom:16px; left:16px; width:286px; z-index:50; opacity:0; transition:opacity .6s; }
+  #pe.show { opacity:1; }
+  #pe-btn { background:none; border:none; font-family:'DM Sans',sans-serif; font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:rgba(245,197,24,.5); cursor:pointer; padding:3px 0; transition:color .2s; }
+  #pe-btn:hover { color:var(--gold); }
+  #pe-body { background:rgba(6,10,38,.95); border:.5px solid rgba(245,197,24,.18); border-radius:6px; padding:12px; margin-top:5px; max-height:0; overflow:hidden; transition:max-height .4s ease; }
+  #pe-body.open { max-height:230px; }
+  .pe-title { font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:rgba(245,197,24,.42); margin-bottom:8px; }
+  .pe-text { font-size:10px; line-height:1.8; color:rgba(253,243,227,.48); white-space:pre-wrap; word-break:break-word; font-family:'DM Sans',sans-serif; }
+  .hl { color:var(--gold); }
+
+  /* THREE WORLDS */
+  #s-worlds { background:var(--navy); z-index:30; gap:18px; padding:20px 24px; text-align:center; }
+  .w-title { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:clamp(15px,2.4vw,22px); color:rgba(253,243,227,.72); opacity:0; animation:up 1s ease .2s forwards; position:relative; z-index:2; }
+  .w-sub { font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:rgba(245,197,24,.42); opacity:0; animation:up 1s ease .7s forwards; position:relative; z-index:2; }
+  #w-row { display:flex; gap:24px; align-items:center; justify-content:center; flex-wrap:wrap; position:relative; z-index:2; }
+  .w-item { display:flex; flex-direction:column; align-items:center; gap:6px; opacity:0; transform:translateY(18px); transition:opacity .6s ease,transform .6s ease; }
+  .w-item.in { opacity:1; transform:translateY(0); }
+  .w-word { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:12px; color:rgba(253,243,227,.5); }
+  .w-poem { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:10px; color:rgba(253,243,227,.36); max-width:120px; line-height:1.5; text-align:center; }
+  .next-btn { background:transparent; border:.5px solid rgba(245,197,24,.35); color:var(--gold); font-family:'DM Sans',sans-serif; font-size:10px; letter-spacing:.16em; text-transform:uppercase; padding:9px 26px; cursor:pointer; border-radius:2px; transition:background .3s,border-color .3s; opacity:0; animation:up 1s ease 1.6s forwards; position:relative; z-index:2; }
+  .next-btn:hover { background:rgba(245,197,24,.08); border-color:var(--gold); }
+
+  /* scattered corner flowers */
+  .corner-flowers { position:absolute; inset:0; pointer-events:none; z-index:1; overflow:hidden; }
+  .cf { position:absolute; line-height:1; opacity:0; animation:cfIn .9s ease forwards; }
+  @keyframes cfIn { from{opacity:0;transform:scale(.4) rotate(-15deg)} to{opacity:.75;transform:scale(1) rotate(0deg)} }
+
+  /* FINALE */
+  #s-finale { gap:10px; text-align:center; padding:0; position:relative; display:flex; align-items:center; justify-content:center; }
+  .finale-inner { position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; width:100%; height:100%; }
+  .f1 { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:clamp(14px,2.4vw,22px); color:rgba(253,243,227,.7); opacity:0; animation:up 1.1s ease .3s forwards; }
+  .f2 { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:clamp(11px,1.7vw,15px); color:rgba(253,243,227,.42); max-width:440px; line-height:1.9; opacity:0; animation:up 1.1s ease 1.1s forwards; }
+  .f-name { font-family:'Sacramento',cursive; font-size:clamp(32px,6vw,60px); color:var(--gold); text-shadow:0 0 40px rgba(245,197,24,.2); opacity:0; animation:up 1.1s ease 2s forwards; margin-top:6px; }
+  .f-role { font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:rgba(245,197,24,.42); opacity:0; animation:up 1s ease 2.8s forwards; }
+  .blink { display:inline-block; width:2px; height:1em; background:var(--gold); margin-left:4px; vertical-align:middle; animation:blink 1s step-end infinite; }
+
+  @keyframes up { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<canvas id="c"></canvas>
+
+<!-- INTRO -->
+<div class="screen" id="s-intro">
+  <div class="big-q">what do you want to grow?</div>
+  <div class="input-wrap">
+    <input id="word-input" type="text" placeholder="a mood, a word, a feeling…" maxlength="40" autocomplete="off" spellcheck="false">
+    <div class="hint">press enter to grow ↵</div>
+  </div>
+  <div id="counter">0 / 3 flowers grown</div>
+</div>
+
+<div id="status"></div>
+<div id="poem"></div>
+
+<!-- PE PANEL -->
+<div id="pe">
+  <button id="pe-btn" onclick="togglePE()">✦ prompt engineering</button>
+  <div id="pe-body">
+    <div class="pe-title">system prompt sent to gemini</div>
+    <div class="pe-text"><span class="hl">"You are a creative AI.</span>
+Given one word, respond ONLY
+in raw JSON with these fields:
+<span class="hl">palette</span>: [3 hex color strings]
+<span class="hl">texture</span>: one texture word
+<span class="hl">shape</span>: round | spiky | drooping
+         | reaching | sprawling
+<span class="hl">poem</span>: one line, max 10 words
+
+No markdown. JSON only."</div>
+  </div>
+</div>
+
+<!-- THREE WORLDS -->
+<div class="screen off" id="s-worlds">
+  <div class="corner-flowers" id="worlds-corners"></div>
+  <div class="w-title">"three prompts. three worlds. same garden."</div>
+  <div class="w-sub">this is what I do — I write the words that make machines dream</div>
+  <div id="w-row"></div>
+  <button class="next-btn" onclick="showFinale()">see the full garden →</button>
+</div>
+
+<!-- FINALE -->
+<div class="screen off" id="s-finale">
+  <div class="corner-flowers" id="finale-corners"></div>
+  <div class="finale-inner">
+    <div class="f1">"I write the words that make machines dream."</div>
+    <div class="f2">I build bridges between people and the spaces that hold them.<br>I think in systems, but I feel in stories.</div>
+    <div class="f-name">Aamina Hussain<span class="blink"></span></div>
+    <div class="f-role">Creative Technologist · AI Prompt Artist · Google Creative Fellowship 2026</div>
+  </div>
+</div>
+
+<script>
+const API_KEY = 'AIzaSyChwXJ4NnY2VUpq1Kf-ZZIkB_B94tSPQ3E';
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+// cursor
+const cur = document.getElementById('cursor');
+document.addEventListener('mousemove', e => { cur.style.left=e.clientX+'px'; cur.style.top=e.clientY+'px'; });
+document.querySelectorAll('button,input').forEach(el=>{
+  el.addEventListener('mouseenter',()=>cur.classList.add('big'));
+  el.addEventListener('mouseleave',()=>cur.classList.remove('big'));
+});
+
+// stars
+let stars=[];
+function initStars(){
+  stars=[];
+  for(let i=0;i<200;i++) stars.push({
+    x:Math.random()*W, y:Math.random()*H*.75,
+    r:Math.random()*1.4+.3,
+    ph:Math.random()*Math.PI*2,
+    sp:Math.random()*.018+.004
+  });
+}
+initStars();
+window.addEventListener('resize',()=>{ resize(); initStars(); });
+
+// state
+let flowers=[], particles=[], flowerData=[], growing=false, t=0;
+
+// main loop
+(function loop(){
+  t+=.016;
+  ctx.clearRect(0,0,W,H);
+  stars.forEach(s=>{
+    const a=.15+.75*Math.abs(Math.sin(s.ph+t*s.sp));
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(245,197,24,${a})`; ctx.fill();
+  });
+  flowers.forEach(f=>{ if(f.p<1) f.p+=.010; drawFlower(f,t); });
+  particles=particles.filter(p=>p.life>0);
+  particles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=.07; p.life-=.022;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fillStyle=p.col; ctx.globalAlpha=p.life; ctx.fill(); ctx.globalAlpha=1;
+  });
+  requestAnimationFrame(loop);
+})();
+
+// Each flower gets a unique emoji + palette-tinted offscreen canvas
+const FLOWER_SETS = [
+  {emojis:['🌸','🌸','🌸'], label:'blossom'},
+  {emojis:['🌺','🌺','🌺'], label:'hibiscus'},
+  {emojis:['🌼','🌼','🌼'], label:'daisy'},
+  {emojis:['🌻','🌻','🌻'], label:'sunflower'},
+  {emojis:['🌹','🌹','🌹'], label:'rose'},
+  {emojis:['🌷','🌷','🌷'], label:'tulip'},
+  {emojis:['💐','💐','💐'], label:'bouquet'},
+  {emojis:['🏵️','🏵️','🏵️'], label:'rosette'},
+];
+const flowerCache={};
+
+function makeFlowerCanvas(emoji, palette){
+  const key=emoji+palette.join('');
+  if(flowerCache[key]) return flowerCache[key];
+  const sz=200;
+  const off=document.createElement('canvas');
+  off.width=off.height=sz;
+  const c=off.getContext('2d');
+
+  // radial glow using AI palette
+  const g=c.createRadialGradient(sz/2,sz/2,sz*.04,sz/2,sz/2,sz*.52);
+  g.addColorStop(0, palette[0]+'bb');
+  g.addColorStop(0.45, palette[1]+'55');
+  g.addColorStop(1,'transparent');
+  c.fillStyle=g; c.fillRect(0,0,sz,sz);
+
+  // big emoji flower
+  c.font=`${sz*.78}px serif`;
+  c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(emoji, sz/2, sz/2+4);
+
+  // soft palette wash on top
+  c.globalCompositeOperation='soft-light';
+  const g2=c.createRadialGradient(sz/2,sz/2,0,sz/2,sz/2,sz*.4);
+  g2.addColorStop(0, palette[0]+'aa');
+  g2.addColorStop(1,'transparent');
+  c.fillStyle=g2; c.fillRect(0,0,sz,sz);
+  c.globalCompositeOperation='source-over';
+
+  flowerCache[key]=off;
+  return off;
+}
+
+function drawFlower(f,t){
+  const pr=Math.min(f.p,1);
+  const sw=Math.sin(t*.5+f.sway0)*9*pr;
+  ctx.save(); ctx.translate(f.x,f.y);
+  const sh=75*pr;
+
+  // stem
+  ctx.beginPath(); ctx.moveTo(0,4);
+  ctx.quadraticCurveTo(sw*.35,-sh*.48, sw,-sh+10);
+  ctx.strokeStyle='#2a5c1a'; ctx.lineWidth=3; ctx.lineCap='round'; ctx.stroke();
+
+  // leaves
+  if(pr>.2){
+    const lp=Math.min((pr-.15)/.5,1);
+    drawLeaf(ctx, sw*.25,-sh*.38, 24*lp, '#3d7a20', 1);
+    drawLeaf(ctx, sw*.25,-sh*.38, 24*lp, '#2a5c10', -1);
+  }
+
+  // flower head — rich emoji canvas tinted by AI palette
+  if(pr>.42){
+    const bp=Math.min((pr-.40)/.6,1);
+    const pulse=1+.028*Math.sin(t*1.05+f.sway0);
+    const rot=Math.sin(t*.38+f.sway0)*.07;
+    const fc=makeFlowerCanvas(f.emoji, f.palette);
+    const s=150*bp*pulse;
+    ctx.save();
+    ctx.translate(sw, -sh);
+    ctx.rotate(rot);
+    ctx.globalAlpha=bp*.97;
+    ctx.drawImage(fc, -s/2, -s/2, s, s);
+    ctx.globalAlpha=1;
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawLeaf(ctx,sx,sy,sz,col,dir){
+  ctx.save(); ctx.translate(sx,sy);
+  ctx.beginPath(); ctx.moveTo(0,0);
+  ctx.quadraticCurveTo(sz*dir,-sz*.55, sz*1.4*dir,-sz*.06);
+  ctx.quadraticCurveTo(sz*.55*dir, sz*.32, 0,0);
+  ctx.fillStyle=col; ctx.globalAlpha=.82; ctx.fill(); ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+function spawnParticles(x,y,col){
+  for(let i=0;i<22;i++) particles.push({
+    x,y,vx:(Math.random()-.5)*5,vy:(Math.random()-1.8)*4,
+    r:Math.random()*3+1,col,life:1
+  });
+}
+
+function flowerPos(idx){
+  const pos=[
+    {x:W*.26,y:H*1.01},
+    {x:W*.5, y:H*1.03},
+    {x:W*.74,y:H*1.01}
+  ];
+  return pos[idx]||{x:W*.5,y:H*1.01};
+}
+
+async function callGemini(word){
+  const prompt=`You are a creative AI. Given a single word or feeling, respond ONLY in valid raw JSON (no markdown, no backticks, no explanation) with exactly these four fields:
+"palette": array of exactly 3 hex color strings that visually evoke the word
+"texture": one word describing a physical texture
+"shape": exactly one of these words: round, spiky, drooping, reaching, sprawling
+"poem": one original line of poetry, maximum 10 words, evoking the word
+
+Word: "${word}"`;
+
+  try {
+    const res=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}]}) }
+    );
+    if(!res.ok){
+      const errData=await res.json().catch(()=>({}));
+      throw new Error(`API error ${res.status}: ${errData?.error?.message||res.statusText}`);
+    }
+    const data=await res.json();
+    const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'{}';
+    const clean=raw.replace(/```json|```/g,'').trim();
+    return JSON.parse(clean);
+  } catch(err) {
+    // fallback: generate a beautiful result from the word locally
+    console.warn('Gemini failed, using fallback:', err.message);
+    return localFallback(word);
+  }
+}
+
+function localFallback(word){
+  // deterministic but varied palettes based on word characters
+  const seed=word.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const palettes=[
+    ['#f5c518','#d4696a','#2d5a1b'],
+    ['#7ececa','#c47ab0','#1a3a5c'],
+    ['#f0a878','#8b3a2e','#4a7c3f'],
+    ['#b8a9e0','#e87878','#2a4a2a'],
+    ['#f0d080','#a0c878','#5a3a8a'],
+    ['#e8a0b0','#78b0d0','#4a6a2a'],
+  ];
+  const shapes=['round','spiky','drooping','reaching','sprawling'];
+  const poems=[
+    `${word} blooms where silence grows`,
+    `soft ${word} in the morning air`,
+    `${word} like petals, drifting down`,
+    `in every ${word}, a world unfolds`,
+    `${word} — the garden remembers you`,
+  ];
+  const pal=palettes[seed%palettes.length];
+  const shape=shapes[seed%shapes.length];
+  const poem=poems[seed%poems.length];
+  return {palette:pal,texture:'velvet',shape,poem};
+}
+
+const input=document.getElementById('word-input');
+const counter=document.getElementById('counter');
+const statusEl=document.getElementById('status');
+const poemEl=document.getElementById('poem');
+const peEl=document.getElementById('pe');
+
+input.addEventListener('keydown', async e=>{
+  if(e.key!=='Enter') return;
+  const word=input.value.trim();
+  if(!word||growing||flowers.length>=3) return;
+  growing=true; input.value=''; input.disabled=true;
+  poemEl.style.opacity='0';
+  statusEl.textContent=`growing "${word}"…`; statusEl.style.opacity='1';
+
+  try{
+    const result=await callGemini(word);
+    const pal=Array.isArray(result.palette)&&result.palette.length===3
+      ? result.palette : ['#f5c518','#d4696a','#2d5a1b'];
+    const shape=['round','spiky','drooping','reaching','sprawling'].includes(result.shape)
+      ? result.shape : 'round';
+    const poem=result.poem||'';
+    const idx=flowers.length;
+    const pos=flowerPos(idx);
+    spawnParticles(pos.x,pos.y,pal[0]);
+    const usedEmojis=flowers.map(f=>f.emoji);
+    const available=FLOWER_SETS.filter(s=>!usedEmojis.includes(s.emojis[0]));
+    const picked=(available.length>0?available:FLOWER_SETS)[Math.floor(Math.random()*(available.length||FLOWER_SETS.length))];
+    flowers.push({x:pos.x,y:pos.y,palette:pal,shape,emoji:picked.emojis[0],p:0,sway0:Math.random()*10});
+    flowerData.push({word,pal,shape,poem,emoji:picked.emojis[0]});
+    counter.textContent=`${flowers.length} / 3 flowers grown`;
+    statusEl.style.opacity='0'; statusEl.textContent='';
+    if(poem){ poemEl.textContent=`"${poem}"`; poemEl.style.opacity='1'; }
+    peEl.classList.add('show');
+    if(flowers.length===3){
+      input.disabled=true;
+      setTimeout(showWorlds, 2600);
+    } else {
+      input.disabled=false; input.focus();
+    }
+  } catch(err){
+    console.error(err);
+    // even on total failure, grow a fallback flower
+    const fb=localFallback(word||'dream');
+    const idx=flowers.length;
+    const pos=flowerPos(idx);
+    spawnParticles(pos.x,pos.y,fb.palette[0]);
+    const fbEmoji=FLOWER_SETS[idx%FLOWER_SETS.length].emojis[0];
+    flowers.push({x:pos.x,y:pos.y,palette:fb.palette,shape:fb.shape,emoji:fbEmoji,p:0,sway0:Math.random()*10});
+    flowerData.push({word:word||'dream',pal:fb.palette,shape:fb.shape,poem:fb.poem,emoji:fbEmoji});
+    counter.textContent=`${flowers.length} / 3 flowers grown`;
+    statusEl.style.opacity='0';
+    if(fb.poem){ poemEl.textContent=`"${fb.poem}"`; poemEl.style.opacity='1'; }
+    peEl.classList.add('show');
+    if(flowers.length===3){ input.disabled=true; setTimeout(showWorlds,2600); }
+    else { input.disabled=false; input.focus(); }
+  }
+  growing=false;
+});
+
+function togglePE(){
+  document.getElementById('pe-body').classList.toggle('open');
+}
+
+// scatter flower emojis around edges of a container, avoiding a central safe zone
+function scatterFlowers(containerId, emojis, palettes){
+  const el=document.getElementById(containerId);
+  el.innerHTML='';
+  // positions: corners + edge midpoints, all away from center
+  const spots=[
+    {top:'4%',  left:'3%',  size:48, delay:.3},
+    {top:'4%',  right:'3%', size:56, delay:.5},
+    {bottom:'4%',left:'3%', size:52, delay:.7},
+    {bottom:'4%',right:'3%',size:44, delay:.4},
+    {top:'4%',  left:'28%', size:36, delay:.9},
+    {top:'4%',  right:'28%',size:40, delay:.6},
+    {bottom:'4%',left:'28%',size:38, delay:1.0},
+    {bottom:'4%',right:'28%',size:42, delay:.8},
+    {top:'38%', left:'1%',  size:44, delay:.5},
+    {top:'38%', right:'1%', size:40, delay:.7},
+  ];
+  spots.forEach((s,i)=>{
+    const div=document.createElement('div');
+    div.className='cf';
+    const emoji=emojis[i%emojis.length];
+    const col=palettes[i%palettes.length]||'#f5c518';
+    Object.assign(div.style,{
+      fontSize: s.size+'px',
+      filter: `drop-shadow(0 0 10px ${col}77)`,
+      animationDelay: s.delay+'s',
+    });
+    if(s.top)    div.style.top=s.top;
+    if(s.bottom) div.style.bottom=s.bottom;
+    if(s.left)   div.style.left=s.left;
+    if(s.right)  div.style.right=s.right;
+    div.textContent=emoji;
+    el.appendChild(div);
+  });
+}
+
+function showWorlds(){
+  document.getElementById('s-intro').classList.add('off');
+  poemEl.style.opacity='0'; peEl.style.opacity='0';
+  const row=document.getElementById('w-row'); row.innerHTML='';
+  const allEmojis=flowerData.map(fd=>fd.emoji);
+  const allPals=flowerData.map(fd=>fd.pal[0]);
+  flowerData.forEach((fd,i)=>{
+    const item=document.createElement('div'); item.className='w-item';
+    const emojiEl=`<div style="font-size:60px;line-height:1;filter:drop-shadow(0 0 12px ${fd.pal[0]}88)">${fd.emoji}</div>`;
+    item.innerHTML=`${emojiEl}<div class="w-word">${fd.word}</div><div class="w-poem">"${fd.poem}"</div>`;
+    row.appendChild(item);
+    setTimeout(()=>item.classList.add('in'),800+i*320);
+  });
+  scatterFlowers('worlds-corners', allEmojis, allPals);
+  document.getElementById('s-worlds').classList.remove('off');
+}
+
+function showFinale(){
+  document.getElementById('s-worlds').classList.add('off');
+  const allEmojis=flowerData.map(fd=>fd.emoji);
+  const allPals=flowerData.map(fd=>fd.pal[0]);
+  scatterFlowers('finale-corners', allEmojis, allPals);
+  document.getElementById('s-finale').classList.remove('off');
+}
+</script>
+</body>
+</html>
